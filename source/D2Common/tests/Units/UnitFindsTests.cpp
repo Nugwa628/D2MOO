@@ -165,6 +165,13 @@ namespace
 		return (pUnitFindArg->unk0x30 >> (pUnit->dwClassId & 31)) & 1;
 	}
 
+	// Accepts the first units, as many as stored in unk0x30, and counts its calls in unk0x28
+	int32_t __fastcall test_unit_first_calls(D2UnitStrc* pUnit, D2UnitFindArgStrc* pUnitFindArg)
+	{
+		++pUnitFindArg->unk0x28;
+		return pUnitFindArg->unk0x28 <= pUnitFindArg->unk0x30;
+	}
+
 	int __fastcall test_nearest_unit_any(D2UnitStrc* pUnit, D2UnitStrc* pSourceUnit)
 	{
 		return pUnit != pSourceUnit;
@@ -528,10 +535,11 @@ TEST_SUITE("UnitFindsTests")
 		const auto kinds = make_find_kinds(monstats_txt.get(), monstats_record_count, missiles_txt.get(), missiles_record_count);
 		static constexpr auto units_per_room = 9;
 
-		// Positions inside a single room, at the borders of rooms and outside of all rooms
+		// Positions inside a single room, at the borders of rooms (also touching a single border of room 0) and outside of all rooms
 		const std::vector<std::tuple<int, int, int>> areas = {
 			{ 120, 120, 5 }, { 120, 120, 19 }, { 120, 120, 20 }, { 105, 130, 4 }, { 104, 130, 4 }, { 160, 120, 10 },
 			{ 150, 150, 3 }, { 120, 170, 30 }, { 140, 140, 100 }, { 400, 120, 10 }, { 60, 60, 10 }, { 410, 410, 2 },
+			{ 120, 135, 5 }, { 120, 134, 5 }, { 135, 120, 5 }, { 134, 120, 5 }, { 120, 105, 5 }, { 120, 106, 5 }, { 105, 120, 5 },
 		};
 
 		// The unit find argument flags which can be tested without collision data
@@ -547,68 +555,115 @@ TEST_SUITE("UnitFindsTests")
 				{
 					for (const auto nFlags : { 0, 0x2000 })
 					{
-							for (const auto bCustomTest : { false, true })
+						for (const auto bCustomTest : { false, true })
+						{
+							// The scenes are only read, so they are shared by all argument flags and compared afterwards
+							UnitRoomScene moo_scene(find_rooms, units);
+							UnitRoomScene original_scene(find_rooms, units);
+							link_room_units(moo_scene, units_per_room);
+							link_room_units(original_scene, units_per_room);
+
+							for (const auto nArgFlags : arg_flags)
 							{
-								// The scenes are only read, so they are shared by all argument flags and compared afterwards
-								UnitRoomScene moo_scene(find_rooms, units);
-								UnitRoomScene original_scene(find_rooms, units);
-								link_room_units(moo_scene, units_per_room);
-								link_room_units(original_scene, units_per_room);
-
-								for (const auto nArgFlags : arg_flags)
+								// The flags of the argument only matter for UNITFINDS_TestUnit
+								if (bCustomTest && nArgFlags != arg_flags[0])
 								{
-									// The flags of the argument only matter for UNITFINDS_TestUnit
-									if (bCustomTest && nArgFlags != arg_flags[0])
-									{
-										continue;
-									}
-
-									// Input data
-									D2UnitFindDataStrc moo_pUnitFindData{};
-									D2UnitFindDataStrc original_pUnitFindData{};
-									D2UnitFindArgStrc moo_pUnitFindArg{};
-									D2UnitFindArgStrc original_pUnitFindArg{};
-
-									const auto setup_data = [&, nX = nX, nY = nY, nSize = nSize](
-										UnitRoomScene& scene,
-										D2UnitFindDataStrc& pUnitFindData,
-										D2UnitFindArgStrc& pUnitFindArg,
-										const auto& init
-									) {
-										pUnitFindArg.nFlags = nArgFlags;
-										pUnitFindArg.pUnit = scene.Unit(units_per_room);
-										pUnitFindArg.nX = nX;
-										pUnitFindArg.nY = nY;
-										pUnitFindArg.nSize = nSize;
-										pUnitFindArg.nMaxArrayEntries = 9;
-										pUnitFindArg.pfnUnitTest = test_unit_by_class_mask;
-										pUnitFindArg.unk0x30 = 0x5A5A5A5A;
-
-										init(nullptr, &pUnitFindData, scene.Room(room_index), nX, nY, nSize, bCustomTest ? test_unit_by_class_mask : nullptr, &pUnitFindArg);
-										pUnitFindData.nFlags = nFlags;
-									};
-
-									setup_data(moo_scene, moo_pUnitFindData, moo_pUnitFindArg, moo_init);
-									setup_data(original_scene, original_pUnitFindData, original_pUnitFindArg, original_init);
-
-									// Call both implementations
-									sut(&moo_pUnitFindData);
-									original(&original_pUnitFindData);
-
-									// Compare potentially modified input data
-									check_unit_find_data_eq(moo_scene, moo_pUnitFindData, original_scene, original_pUnitFindData);
-									CHECK_EQ(get_unit_indices(moo_scene, moo_pUnitFindData.pUnitsArray, moo_pUnitFindData.nIndex), get_unit_indices(original_scene, original_pUnitFindData.pUnitsArray, original_pUnitFindData.nIndex));
-									check_unit_find_args_eq(moo_scene, moo_pUnitFindArg, original_scene, original_pUnitFindArg);
-
-									// Free allocated memory
-									moo_free(&moo_pUnitFindData);
-									original_free(&original_pUnitFindData);
+									continue;
 								}
 
-								check_scenes_eq(moo_scene, original_scene);
+								// Input data
+								D2UnitFindDataStrc moo_pUnitFindData{};
+								D2UnitFindDataStrc original_pUnitFindData{};
+								D2UnitFindArgStrc moo_pUnitFindArg{};
+								D2UnitFindArgStrc original_pUnitFindArg{};
+
+								const auto setup_data = [&, nX = nX, nY = nY, nSize = nSize](
+									UnitRoomScene& scene,
+									D2UnitFindDataStrc& pUnitFindData,
+									D2UnitFindArgStrc& pUnitFindArg,
+									const auto& init
+								) {
+									pUnitFindArg.nFlags = nArgFlags;
+									pUnitFindArg.pUnit = scene.Unit(units_per_room);
+									pUnitFindArg.nX = nX;
+									pUnitFindArg.nY = nY;
+									pUnitFindArg.nSize = nSize;
+									pUnitFindArg.nMaxArrayEntries = 9;
+									pUnitFindArg.pfnUnitTest = test_unit_by_class_mask;
+									pUnitFindArg.unk0x30 = 0x5A5A5A5A;
+
+									init(nullptr, &pUnitFindData, scene.Room(room_index), nX, nY, nSize, bCustomTest ? test_unit_by_class_mask : nullptr, &pUnitFindArg);
+									pUnitFindData.nFlags = nFlags;
+								};
+
+								setup_data(moo_scene, moo_pUnitFindData, moo_pUnitFindArg, moo_init);
+								setup_data(original_scene, original_pUnitFindData, original_pUnitFindArg, original_init);
+
+								// Call both implementations
+								sut(&moo_pUnitFindData);
+								original(&original_pUnitFindData);
+
+								// Compare potentially modified input data
+								check_unit_find_data_eq(moo_scene, moo_pUnitFindData, original_scene, original_pUnitFindData);
+								CHECK_EQ(get_unit_indices(moo_scene, moo_pUnitFindData.pUnitsArray, moo_pUnitFindData.nIndex), get_unit_indices(original_scene, original_pUnitFindData.pUnitsArray, original_pUnitFindData.nIndex));
+								check_unit_find_args_eq(moo_scene, moo_pUnitFindArg, original_scene, original_pUnitFindArg);
+
+								// Free allocated memory
+								moo_free(&moo_pUnitFindData);
+								original_free(&original_pUnitFindData);
 							}
+
+							check_scenes_eq(moo_scene, original_scene);
+						}
 					}
 				}
+			}
+		}
+
+		SUBCASE("More units than the initial array size")
+		{
+			// Enough units for the units array to be reallocated up to 3 times, the number of found units goes around the array sizes
+			static constexpr auto many_units_per_room = 12;
+			const auto units = make_room_units(kinds, many_units_per_room);
+
+			for (const auto nAcceptedUnits : { 14, 15, 16, 29, 30, 31, 45, 48 })
+			{
+				// Input data
+				UnitRoomScene moo_scene(find_rooms, units);
+				UnitRoomScene original_scene(find_rooms, units);
+				D2UnitFindDataStrc moo_pUnitFindData{};
+				D2UnitFindDataStrc original_pUnitFindData{};
+				D2UnitFindArgStrc moo_pUnitFindArg{};
+				D2UnitFindArgStrc original_pUnitFindArg{};
+
+				const auto setup_data = [nAcceptedUnits](
+					UnitRoomScene& scene,
+					D2UnitFindDataStrc& pUnitFindData,
+					D2UnitFindArgStrc& pUnitFindArg,
+					const auto& init
+				) {
+					link_room_units(scene, many_units_per_room);
+					pUnitFindArg.unk0x30 = nAcceptedUnits;
+					init(nullptr, &pUnitFindData, scene.Room(0), 140, 140, 100, test_unit_first_calls, &pUnitFindArg);
+				};
+
+				setup_data(moo_scene, moo_pUnitFindData, moo_pUnitFindArg, moo_init);
+				setup_data(original_scene, original_pUnitFindData, original_pUnitFindArg, original_init);
+
+				// Call both implementations
+				sut(&moo_pUnitFindData);
+				original(&original_pUnitFindData);
+
+				// Compare potentially modified input data
+				CHECK_EQ(original_pUnitFindData.nIndex, nAcceptedUnits);
+				check_unit_find_data_eq(moo_scene, moo_pUnitFindData, original_scene, original_pUnitFindData);
+				CHECK_EQ(get_unit_indices(moo_scene, moo_pUnitFindData.pUnitsArray, moo_pUnitFindData.nIndex), get_unit_indices(original_scene, original_pUnitFindData.pUnitsArray, original_pUnitFindData.nIndex));
+				check_unit_find_args_eq(moo_scene, moo_pUnitFindArg, original_scene, original_pUnitFindArg);
+				check_scenes_eq(moo_scene, original_scene);
+
+				// Free allocated memory
+				moo_free(&moo_pUnitFindData);
+				original_free(&original_pUnitFindData);
 			}
 		}
 
