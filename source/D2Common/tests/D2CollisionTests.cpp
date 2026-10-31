@@ -1758,6 +1758,38 @@ TEST_SUITE("D2CollisionTests")
 
 			check_collision_maps(*this);
 		}
+
+		SUBCASE("Free subtile around the maximum search distance")
+		{
+			build_maps(no_room);
+
+			const int nSpawnX = origin_x + 1;
+			const int nSpawnY = origin_y + 1;
+			for (int nOffsetY = 0; nOffsetY <= 20; nOffsetY += 20)
+			{
+				for (int nDistance = 45; nDistance <= 55; ++nDistance)
+				{
+					block_all_but(nSpawnX + nDistance, nSpawnY + nOffsetY);
+
+					for (int nUnitSize = 0; nUnitSize <= 1; ++nUnitSize)
+					{
+						// Input data
+						D2CoordStrc moo_pSpawnPoint{ nSpawnX, nSpawnY };
+						D2CoordStrc original_pSpawnPoint{ nSpawnX, nSpawnY };
+
+						// Call both implementations
+						const auto moo_result = sut(moo_room(0), &moo_pSpawnPoint, nUnitSize, COLLIDE_WALL, bAllowNeighborRooms);
+						const auto original_result = original(original_room(0), &original_pSpawnPoint, nUnitSize, COLLIDE_WALL, bAllowNeighborRooms);
+
+						// Compare return values
+						CHECK_EQ(moo_map.index_of(moo_result), original_map.index_of(original_result));
+
+						// Compare potentially modified input data
+						MOO_CHECK_EQ(moo_pSpawnPoint, original_pSpawnPoint, "Comparing pSpawnPoint");
+					}
+				}
+			}
+		}
 	}
 
 	TEST_CASE_FIXTURE(CollisionFixture, "D2Common.0x6FD462B0 (#10137)")
@@ -1799,6 +1831,38 @@ TEST_SUITE("D2CollisionTests")
 			}
 
 			check_collision_maps(*this);
+		}
+
+		SUBCASE("Free subtile around the maximum search distance")
+		{
+			build_maps(no_room);
+
+			const int nSpawnX = origin_x + 1;
+			const int nSpawnY = origin_y + 1;
+			for (int nOffsetY = 0; nOffsetY <= 20; nOffsetY += 20)
+			{
+				for (int nDistance = 45; nDistance <= 55; ++nDistance)
+				{
+					block_all_but(nSpawnX + nDistance, nSpawnY + nOffsetY);
+
+					for (int nUnitSize = 0; nUnitSize <= 1; ++nUnitSize)
+					{
+						// Input data
+						D2CoordStrc moo_pSpawnPoint{ nSpawnX, nSpawnY };
+						D2CoordStrc original_pSpawnPoint{ nSpawnX, nSpawnY };
+
+						// Call both implementations
+						const auto moo_result = sut(moo_room(0), &moo_pSpawnPoint, nUnitSize, COLLIDE_WALL, nPosIncrementValue);
+						const auto original_result = original(original_room(0), &original_pSpawnPoint, nUnitSize, COLLIDE_WALL, nPosIncrementValue);
+
+						// Compare return values
+						CHECK_EQ(moo_map.index_of(moo_result), original_map.index_of(original_result));
+
+						// Compare potentially modified input data
+						MOO_CHECK_EQ(moo_pSpawnPoint, original_pSpawnPoint, "Comparing pSpawnPoint");
+					}
+				}
+			}
 		}
 	}
 

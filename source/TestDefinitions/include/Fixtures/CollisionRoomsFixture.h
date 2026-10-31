@@ -28,11 +28,12 @@ struct CollisionRoomsFixture : Fixture
 	static constexpr int unknown_room = -2;
 
 	// Subtile coordinates are multiples of 5 so the rooms are aligned on game tiles
+	// The map is more than 50 subtiles wide so the maximum search distance of the free coordinates functions is reachable
 	static constexpr int origin_x = 5000;
 	static constexpr int origin_y = 3000;
-	static constexpr int column_widths[column_count] = { 10, 15, 5 };
+	static constexpr int column_widths[column_count] = { 10, 45, 5 };
 	static constexpr int row_heights[row_count] = { 15, 5, 10 };
-	static constexpr int map_width = 10 + 15 + 5;
+	static constexpr int map_width = 10 + 45 + 5;
 	static constexpr int map_height = 15 + 5 + 10;
 
 	struct CollisionMap
@@ -160,6 +161,21 @@ struct CollisionRoomsFixture : Fixture
 		}
 	}
 
+	// Blocks every subtile of both maps with all collision flags, except the subtile at nX, nY
+	void block_all_but(int nX, int nY)
+	{
+		for (int i = 0; i < room_count; ++i)
+		{
+			const D2DrlgCoordsStrc& tCoords = moo_map.rooms[i].tCoords;
+			for (int j = 0; j < tCoords.nSubtileWidth * tCoords.nSubtileHeight; ++j)
+			{
+				const bool bFree = tCoords.nSubtileX + j % tCoords.nSubtileWidth == nX && tCoords.nSubtileY + j / tCoords.nSubtileWidth == nY;
+				moo_map.collision_masks[i][j] = bFree ? 0 : 0xFFFF;
+				original_map.collision_masks[i][j] = bFree ? 0 : 0xFFFF;
+			}
+		}
+	}
+
 	D2ActiveRoomStrc* moo_room(int nRoom)
 	{
 		return nRoom == no_room ? nullptr : &moo_map.rooms[nRoom];
@@ -174,10 +190,14 @@ struct CollisionRoomsFixture : Fixture
 
 // Installs the same synthetic collision field (normally loaded from expfield.d2) in D2MOO and the original game.
 // Each cell of the field points to its neighbour towards the center of the field, the center itself ends the walk.
+// The field is not square, so that mixing up the center coordinates is noticed. It stays 256 wide because the game indexes its rows with a fixed width of 256.
 template<class Fixture>
 struct CollisionFieldFixture : Fixture
 {
-	static constexpr int field_size = 256;
+	static constexpr int field_width = 256;
+	static constexpr int field_height = 200;
+	static constexpr int field_center_x = field_width / 2;
+	static constexpr int field_center_y = field_height / 2;
 
 	std::unique_ptr<uint8_t[]> field_data;
 
@@ -205,23 +225,23 @@ struct CollisionFieldFixture : Fixture
 			{ 5, 4, 3 }, // dy = 1
 		};
 
-		field_data = std::make_unique<uint8_t[]>(field_size * field_size);
-		for (int y = 0; y < field_size; ++y)
+		field_data = std::make_unique<uint8_t[]>(field_width * field_height);
+		for (int y = 0; y < field_height; ++y)
 		{
-			for (int x = 0; x < field_size; ++x)
+			for (int x = 0; x < field_width; ++x)
 			{
-				const int nStepX = (x < field_size / 2) - (x > field_size / 2);
-				const int nStepY = (y < field_size / 2) - (y > field_size / 2);
-				field_data[y * field_size + x] = directions[nStepY + 1][nStepX + 1];
+				const int nStepX = (x < field_center_x) - (x > field_center_x);
+				const int nStepY = (y < field_center_y) - (y > field_center_y);
+				field_data[y * field_width + x] = directions[nStepY + 1][nStepX + 1];
 			}
 		}
 
 		D2CollisionFieldStrc collision_field{};
-		collision_field.nWidth = field_size;
-		collision_field.nHeight = field_size;
-		collision_field.nArea = field_size * field_size;
-		collision_field.nCenterX = field_size / 2;
-		collision_field.nCenterY = field_size / 2;
+		collision_field.nWidth = field_width;
+		collision_field.nHeight = field_height;
+		collision_field.nArea = field_width * field_height;
+		collision_field.nCenterX = field_center_x;
+		collision_field.nCenterY = field_center_y;
 
 		previous_field_data = sgptDataTables->pFieldData;
 		previous_collision_field = sgptDataTables->pCollisionField;
