@@ -357,8 +357,10 @@ TEST_SUITE("UnitFindsTests")
 			units.push_back(make_unit_at(kinds[0], 4, 405, 405));
 			units.push_back(make_unit_at(kinds[3], 0, 130, 130));
 
+			// The last position is exactly 3 subtiles away from unit 1, which is only found with sizes above 3
 			const std::vector<std::pair<int, int>> positions = {
 				{ 120, 120 }, { 100, 100 }, { 139, 139 }, { 160, 120 }, { 120, 160 }, { 170, 170 }, { 60, 60 }, { 230, 230 }, { 405, 405 }, { -50, 120 },
+				{ units[1].nX + 3, units[1].nY },
 			};
 
 			for (const auto unit_index : { 0, 5, 11, 17, 23, units_per_room * 4, units_per_room * 4 + 1 })
@@ -379,7 +381,7 @@ TEST_SUITE("UnitFindsTests")
 
 				for (const auto& [nX, nY] : positions)
 				{
-					for (const auto nSize : { 0, 1, 5, 20, 45, 70000 })
+					for (const auto nSize : { 0, 1, 3, 4, 5, 20, 45, 70000 })
 					{
 						for (const auto pfnUnitTest : { test_nearest_unit_any, test_nearest_unit_by_class })
 						{
