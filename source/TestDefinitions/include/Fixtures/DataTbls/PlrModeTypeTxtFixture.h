@@ -18,11 +18,13 @@ struct PlrModeTypeTxtFixture : Fixture
 	std::unique_ptr<D2PlrModeTypeTxt[]> plrmodetype_txt;
 	int plrtype_record_count;
 	int plrmode_record_count;
+	uintptr_t plrmodetype_d2common_base;
 
 	PlrModeTypeTxtFixture()
 	{
 		const auto working_directory = std::filesystem::current_path();
 		const auto d2common_base = reinterpret_cast<uintptr_t>(LoadLibraryA((working_directory / "D2Common.dll").string().c_str()));
+		plrmodetype_d2common_base = d2common_base;
 
 		const auto original_sgptDataTables = reinterpret_cast<D2DataTablesStrc**>(d2common_base + 0x00096A20);
 
@@ -84,4 +86,18 @@ struct PlrModeTypeTxtFixture : Fixture
 		plrtype_record_count = type_count;
 		plrmode_record_count = mode_count;
 	};
+
+	// The records are freed with the fixture, so don't leave dangling pointers behind for the following tests
+	~PlrModeTypeTxtFixture()
+	{
+		sgptDataTables->pPlrModeDataTables.nPlrModeTypeTxtRecordCount = 0;
+		sgptDataTables->pPlrModeDataTables.pPlrModeTypeTxt = nullptr;
+		sgptDataTables->pPlrModeDataTables.pPlayerType = nullptr;
+		sgptDataTables->pPlrModeDataTables.pPlayerMode = nullptr;
+
+		*reinterpret_cast<int*>(plrmodetype_d2common_base + 0x000A9608 + 0x000010D4) = 0;
+		*reinterpret_cast<D2PlrModeTypeTxt**>(plrmodetype_d2common_base + 0x000A9608 + 0x000010D8) = nullptr;
+		*reinterpret_cast<D2PlrModeTypeTxt**>(plrmodetype_d2common_base + 0x000A9608 + 0x000010DC) = nullptr;
+		*reinterpret_cast<D2PlrModeTypeTxt**>(plrmodetype_d2common_base + 0x000A9608 + 0x000010E0) = nullptr;
+	}
 };

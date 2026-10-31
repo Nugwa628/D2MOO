@@ -169,15 +169,6 @@ namespace
 		{
 			sgptDataTables->pTransformStates = previous_transform_states;
 			sgptDataTables->nTransformStates = previous_transform_state_count;
-
-			// The StatesTxtFixture frees its tables after the test, so don't leave dangling pointers behind for the following test suites
-			sgptDataTables->pStatesTxt = nullptr;
-			sgptDataTables->nStatesTxtRecordCount = 0;
-			sgptDataTables->pStateMasks = nullptr;
-			for (auto& pStateMask : sgptDataTables->fStateMasks)
-			{
-				pStateMask = nullptr;
-			}
 		}
 	};
 
