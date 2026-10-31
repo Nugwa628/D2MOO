@@ -1093,7 +1093,7 @@ int __stdcall STATLIST_GetExpireFrame(D2StatListStrc* pStatList)
 //1.14d: 0x00626E10
 void __stdcall D2COMMON_10475_PostStatToStatList(D2UnitStrc* pUnit, D2StatListStrc* pStatList, BOOL bResetFlag)
 {
-	if (D2StatListExStrc* pUnitStatListEx = STATLIST_StatListExCast(pUnit->pStatListEx))
+	if (D2StatListExStrc* pUnitStatListEx = pUnit->pStatListEx ? STATLIST_StatListExCast(pUnit->pStatListEx) : nullptr)
 	{
 		D2Common_ExpireStatList_6FDB6E30((D2StatListExStrc*)pStatList);
 		D2StatListExStrc* pCurrentStatList = pUnitStatListEx;
