@@ -167,7 +167,7 @@ void __fastcall COLLISION_AllocRoomCollisionGrid(void* pMemPool, D2ActiveRoomStr
 		DUNGEON_SetCollisionGridInRoom(pRoom, pCollisionGrid);
 
 		pCollisionGrid->pCollisionMask = (uint16_t*)&pCollisionGrid[1];
-		memset(pCollisionGrid->pCollisionMask, 0x00, sizeof(uint16_t) * (pDrlgCoords.nSubtileWidth * pDrlgCoords.nSubtileHeight)); // TODO: (pDrlgCoords.dwSubtilesWidth + 2) as above?
+		memset(pCollisionGrid->pCollisionMask, 0x00, sizeof(uint16_t) * (pDrlgCoords.nSubtileWidth * pDrlgCoords.nSubtileHeight)); // NOTE: Only width * height masks are cleared, the original game allocates (width + 2) * height masks but does not clear the extra ones either
 
 		DUNGEON_GetAdjacentRoomsListFromRoom(pRoom, &ppRoomList, &nAdjacentRooms);
 		for (int i = 0; i < nAdjacentRooms; ++i)
