@@ -300,7 +300,10 @@ void __stdcall UNITROOM_RemoveUnitFromUpdateQueue(D2UnitStrc* pUnit)
 			}
 		}
 	}
-	D2_ASSERT(!pUnit->pChangeNextUnit);
+	else
+	{
+		D2_ASSERT(!pUnit->pChangeNextUnit);
+	}
 }
 
 //D2Common.0x6FDBD4C0 (#10389)
