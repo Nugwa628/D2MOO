@@ -2383,7 +2383,7 @@ int __stdcall STATLIST_CopyStats(D2UnitStrc* pUnit, int nStatId, D2StatStrc* pBu
 //1.14d: 0x00627830
 int __stdcall D2Common_11273(D2UnitStrc* pUnit, int nStatId)
 {
-	if (D2StatListExStrc* pStatListEx = STATLIST_StatListExCast(pUnit->pStatListEx))
+	if (D2StatListExStrc* pStatListEx = pUnit->pStatListEx ? STATLIST_StatListExCast(pUnit->pStatListEx) : nullptr)
 	{
 		return sub_6FDB5830(pStatListEx, D2SLayerStatIdStrc::MakeFromStatId(nStatId).nPackedValue);
 	}
