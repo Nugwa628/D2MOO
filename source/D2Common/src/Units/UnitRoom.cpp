@@ -322,6 +322,7 @@ BOOL __stdcall UNITROOM_IsUnitInRoom(D2ActiveRoomStrc* pRoom, D2UnitStrc* pUnit)
 	pRoomUnit = *DUNGEON_GetUnitListFromRoom(pRoom);
 	if (pRoomUnit != pUnit)
 	{
+		// NOTE: The original game does not check the first unit and crashes when the unit list of the room is empty
 		while (pRoomUnit)
 		{
 			pRoomUnit = pRoomUnit->pRoomNext;
