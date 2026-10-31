@@ -498,6 +498,43 @@ TEST_SUITE("UnitRoomTests")
 				}
 			}
 		}
+
+		SUBCASE("Unit is linked into the unit list of another room")
+		{
+			for (auto kind_index = 0; kind_index < unit_kind_count; ++kind_index)
+			{
+				for (const auto bRoomEmpty : { true, false })
+				{
+					// Input data
+					const std::vector<UnitRoomSceneUnitDesc> units = {
+						make_unit(unit_kinds[2], 0, 0),
+						make_unit(unit_kinds[kind_index], 0, 1, UNITFLAG_ISLINKREFRESHMSG),
+						make_unit(unit_kinds[9], 1, 2),
+					};
+
+					UnitRoomScene moo_scene(test_rooms, units);
+					UnitRoomScene original_scene(test_rooms, units);
+
+					const auto setup_data = [bRoomEmpty](
+						UnitRoomScene& scene
+					) {
+						scene.LinkUnitList(0, bRoomEmpty ? std::vector<int>{} : std::vector<int>{ 0 });
+						scene.LinkUnitList(1, { 1, 2 });
+						set_allies(scene, 1);
+					};
+
+					setup_data(moo_scene);
+					setup_data(original_scene);
+
+					// Call both implementations
+					sut(moo_scene.Unit(1));
+					original(original_scene.Unit(1));
+
+					// Compare potentially modified input data
+					check_scenes_eq(moo_scene, original_scene);
+				}
+			}
+		}
 	}
 
 	TEST_CASE_FIXTURE(NoOpFixture, "D2Common.0x6FDBD400 (#10387)")

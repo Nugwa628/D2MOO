@@ -250,7 +250,10 @@ void __stdcall UNITROOM_RemoveUnitFromRoom(D2UnitStrc* pUnit)
 			UNITS_ResetRoom(pUnit);
 		}
 	}
-	D2_ASSERT(!pUnit->pRoomNext);
+	else
+	{
+		D2_ASSERT(!pUnit->pRoomNext);
+	}
 }
 
 //D2Common.0x6FDBD400 (#10387)
