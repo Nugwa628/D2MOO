@@ -1407,6 +1407,11 @@ static int32_t __stdcall STATLIST_GetTotalStatValue(D2StatListStrc* pStatList, i
 //1.14d: 0x00625480
 int32_t __stdcall STATLIST_UnitGetStatValue(const D2UnitStrc* pUnit, int nStatId, uint16_t nLayer)
 {
+	if (!pUnit)
+	{
+		return 0;
+	}
+
 	return STATLIST_GetTotalStatValue(pUnit->pStatListEx, nStatId, nLayer);
 }
 
