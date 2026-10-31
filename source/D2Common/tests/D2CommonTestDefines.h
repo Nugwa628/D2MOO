@@ -48,8 +48,8 @@
 
 //#define MISSILESTREAM_TESTS
 //#define MISSILE_TESTS
-//#define UNITFINDS_TESTS
-//#define UNITROOM_TESTS
+#define UNITFINDS_TESTS
+#define UNITROOM_TESTS
 //#define UNITS_TESTS
 
 #define CHAT_TESTS
