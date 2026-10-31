@@ -138,6 +138,10 @@ void __stdcall D2Common_10884_COMPOSIT_unk(D2UnitStrc* pUnit, int nClass, int nM
 
 			szPathPrefix = "DATA\\GLOBAL\\MONSTERS";
 		}
+		else
+		{
+			return;
+		}
 	}
 	else if (nUnitType == UNIT_OBJECT)
 	{
