@@ -280,10 +280,17 @@ inline void check_scenes_eq(UnitRoomScene& moo_scene, UnitRoomScene& original_sc
 		MOO_CHECK_EQ(moo_unit.tUnit, original_unit.tUnit, title.c_str());
 		MOO_CHECK_EQ(moo_unit.tDynamicPath, original_unit.tDynamicPath, title.c_str());
 		MOO_CHECK_EQ(moo_unit.tStaticPath, original_unit.tStaticPath, title.c_str());
-		CHECK_MESSAGE(moo_scene.IndexOf(moo_unit.tUnit.pRoomNext) == original_scene.IndexOf(original_unit.tUnit.pRoomNext), (title + " pRoomNext"));
-		CHECK_MESSAGE(moo_scene.IndexOf(moo_unit.tUnit.pChangeNextUnit) == original_scene.IndexOf(original_unit.tUnit.pChangeNextUnit), (title + " pChangeNextUnit"));
-		CHECK_MESSAGE(moo_scene.IndexOf(moo_unit.tDynamicPath.pRoom) == original_scene.IndexOf(original_unit.tDynamicPath.pRoom), (title + " tDynamicPath.pRoom"));
-		CHECK_MESSAGE(moo_scene.IndexOf(moo_unit.tDynamicPath.pPreviousRoom) == original_scene.IndexOf(original_unit.tDynamicPath.pPreviousRoom), (title + " tDynamicPath.pPreviousRoom"));
-		CHECK_MESSAGE(moo_scene.IndexOf(moo_unit.tStaticPath.pRoom) == original_scene.IndexOf(original_unit.tStaticPath.pRoom), (title + " tStaticPath.pRoom"));
+
+		// pRoomNext, pChangeNextUnit, tDynamicPath.pRoom, tDynamicPath.pPreviousRoom, tStaticPath.pRoom
+		const auto get_links = [](const UnitRoomScene& scene, const UnitRoomScene::UnitData& unit) {
+			return std::vector<int>{
+				scene.IndexOf(unit.tUnit.pRoomNext),
+				scene.IndexOf(unit.tUnit.pChangeNextUnit),
+				scene.IndexOf(unit.tDynamicPath.pRoom),
+				scene.IndexOf(unit.tDynamicPath.pPreviousRoom),
+				scene.IndexOf(unit.tStaticPath.pRoom),
+			};
+		};
+		CHECK_MESSAGE(get_links(moo_scene, moo_unit) == get_links(original_scene, original_unit), (title + " links"));
 	}
 }
