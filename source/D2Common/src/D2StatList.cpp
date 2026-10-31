@@ -2185,7 +2185,20 @@ int __stdcall STATLIST_GetMaxStaminaFromUnit(D2UnitStrc* pUnit)
 //1.14d: 0x00625E00
 int __stdcall STATLIST_GetMaxDurabilityFromUnit(D2UnitStrc* pUnit)
 {
-	return D2Common_11248(NULL, pUnit, STAT_MAXDURABILITY);
+	D2ItemStatCostTxt* pItemStatCostTxtRecord = ITEMS_GetItemStatCostTxtRecord(STAT_MAXDURABILITY);
+	if (!pUnit || !pItemStatCostTxtRecord || !pUnit->pStatListEx)
+	{
+		return 0;
+	}
+
+	// Bonuses are ignored if the unit itself has no max durability
+	const D2SLayerStatIdStrc::PackedType nLayer_StatId = D2SLayerStatIdStrc::Make(0, STAT_MAXDURABILITY).nPackedValue;
+	if (!STATLIST_GetBaseStat_6FDB6340(pUnit->pStatListEx, nLayer_StatId, pItemStatCostTxtRecord))
+	{
+		return 0;
+	}
+
+	return STATLIST_GetTotalStat_6FDB63E0(pUnit->pStatListEx, nLayer_StatId, pItemStatCostTxtRecord);
 }
 
 //D2Common.0x6FDB95D0 (#10568)
