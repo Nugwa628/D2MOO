@@ -280,6 +280,11 @@ static decltype(auto) with_callbacks(StatListWorld& world, Function&& function)
 struct StatListFixture : CharStatsTxtFixture<StatesTxtFixture<ItemStatCostTxtOpStatsFixture<NoOpFixture>>>
 {
 	StatListNativeApi native{};
+	// Always present in a world, so that the min value and op stat paths do not depend on the random seed
+	int fmin_stat_id = -1;
+	int three_op_stats_stat_id = -1;
+	// Stats changed by the op 6/7 (by time) stats
+	std::vector<int> by_time_op_stat_ids;
 
 	StatListFixture()
 	{
@@ -294,6 +299,50 @@ struct StatListFixture : CharStatsTxtFixture<StatesTxtFixture<ItemStatCostTxtOpS
 		native.SetState = reinterpret_cast<decltype(native.SetState)>(d2common_base + 0x000772C0);
 		native.SetStatRemoveCallback = reinterpret_cast<decltype(native.SetStatRemoveCallback)>(d2common_base + 0x00078CA0);
 		native.PostStatToStatList = reinterpret_cast<decltype(native.PostStatToStatList)>(d2common_base + 0x00077340);
+
+		for (int nStatId = 0; nStatId < itemstatcost_record_count; ++nStatId)
+		{
+			const D2ItemStatCostTxt& record = sgptDataTables->pItemStatCostTxt[nStatId];
+			if (fmin_stat_id < 0 && (record.dwItemStatFlags & ITEMSTATCOSTFLAG_FMIN) && !record.bHasOpApplyingToItem)
+			{
+				fmin_stat_id = nStatId;
+			}
+			if (three_op_stats_stat_id < 0 && record.wOpStat[2] < itemstatcost_record_count && !record.bHasOpApplyingToItem)
+			{
+				three_op_stats_stat_id = nStatId;
+			}
+			if (record.nOp >= 6 && record.nOp <= 7)
+			{
+				for (const uint16_t wOpStat : record.wOpStat)
+				{
+					if (wOpStat < itemstatcost_record_count)
+					{
+						by_time_op_stat_ids.push_back(wOpStat);
+					}
+				}
+			}
+		}
+		REQUIRE(fmin_stat_id >= 0);
+		REQUIRE(three_op_stats_stat_id >= 0);
+		REQUIRE(!by_time_op_stat_ids.empty());
+	}
+
+	// Gives the stats changed by the by time stats a value that is out of date, so that they have to be recomputed
+	void make_by_time_op_stats_stale(StatListWorld& world, int nValue) const
+	{
+		D2StatListExStrc* pStatListEx = STATLIST_StatListExCast(world.unit.pStatListEx);
+		if (!pStatListEx)
+		{
+			return;
+		}
+
+		for (D2StatStrc* pStat = pStatListEx->FullStats.pStat; pStat < &pStatListEx->FullStats.pStat[pStatListEx->FullStats.nStatCount]; ++pStat)
+		{
+			if (std::find(by_time_op_stat_ids.begin(), by_time_op_stat_ids.end(), pStat->nStat) != by_time_op_stat_ids.end())
+			{
+				pStat->nValue = nValue;
+			}
+		}
 	}
 
 	int flag_count() const
@@ -405,6 +454,8 @@ struct StatListFixture : CharStatsTxtFixture<StatesTxtFixture<ItemStatCostTxtOpS
 		native.SetStat(unit.pStatListEx, STAT_MAXMANA, rng() % 4000, 0);
 		native.SetStat(unit.pStatListEx, STAT_STAMINA, rng() % 4000, 0);
 		native.SetStat(unit.pStatListEx, STAT_MAXSTAMINA, rng() % 4000, 0);
+		native.SetStat(unit.pStatListEx, fmin_stat_id, -5, 0);
+		native.SetStat(unit.pStatListEx, three_op_stats_stat_id, 1 + rng() % 200, 0);
 		for (int i = 0; i < config.nBaseStatCount; ++i)
 		{
 			set_random_stat(unit.pStatListEx, rng);
@@ -3534,6 +3585,11 @@ TEST_SUITE("D2StatListTests")
 
 			for (size_t i = 0; i < moo_units.size(); ++i)
 			{
+				// pDrlgAct is null so the period of day never changes: make the stored values stale so that the recomputation is observable
+				const int nStaleValue = random_unsigned_integer(1, 100000);
+				make_by_time_op_stats_stale(moo_world, nStaleValue);
+				make_by_time_op_stats_stale(original_world, nStaleValue);
+
 				// Call both implementations
 				with_callbacks(moo_world, [&] { sut(&moo_world.unit, moo_units[i]); });
 				with_callbacks(original_world, [&] { original(&original_world.unit, original_units[i]); });
