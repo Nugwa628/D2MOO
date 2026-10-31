@@ -1817,7 +1817,7 @@ BOOL __stdcall D2COMMON_10530_D2CheckStatlistFlagDMGRed(D2UnitStrc* pUnit)
 {
 	if (pUnit && pUnit->pStatListEx)
 	{
-		return pUnit->pStatListEx->dwFlags & STATLIST_UNK_0x100;
+		return (pUnit->pStatListEx->dwFlags & STATLIST_UNK_0x100) != 0;
 	}
 
 	return FALSE;
