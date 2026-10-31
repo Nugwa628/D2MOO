@@ -2372,7 +2372,7 @@ int __fastcall D2Common_CopyStats_6FDB9C50(D2StatListStrc* pStatList, int nStatI
 //1.14d: 0x006261D0
 int __stdcall STATLIST_CopyStats(D2UnitStrc* pUnit, int nStatId, D2StatStrc* pBuffer, int nBufferSize)
 {
-	if (D2StatListExStrc* pStatListEx = STATLIST_StatListExCast(pUnit->pStatListEx))
+	if (D2StatListExStrc* pStatListEx = pUnit->pStatListEx ? STATLIST_StatListExCast(pUnit->pStatListEx) : nullptr)
 	{
 		return D2Common_CopyStats_6FDB9C50(pStatListEx, nStatId, pBuffer, nBufferSize);
 	}
