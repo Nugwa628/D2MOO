@@ -2089,6 +2089,7 @@ BOOL __stdcall D2Common_10574(D2UnitStrc* pUnit, int nStateId, BOOL bSet)
 					D2Common_ExpireStatList_6FDB6E30((D2StatListExStrc*)pStatList);
 					pStatList->dwFlags |= STATLIST_SET;
 					D2COMMON_10475_PostStatToStatList(pUnit, pStatList, TRUE);
+					return TRUE;
 				}
 			}
 			else
@@ -2098,10 +2099,9 @@ BOOL __stdcall D2Common_10574(D2UnitStrc* pUnit, int nStateId, BOOL bSet)
 					D2Common_ExpireStatList_6FDB6E30((D2StatListExStrc*)pStatList);
 					pStatList->dwFlags &= ~STATLIST_SET;
 					D2COMMON_10475_PostStatToStatList(pUnit, pStatList, TRUE);
+					return TRUE;
 				}
 			}
-
-			return TRUE;
 		}
 	}
 
